@@ -5,6 +5,15 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 from matplotlib import pyplot as plt
+from pprint import pprint
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV
+import numpy as np
+import json
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+from sklearn.naive_bayes import GaussianNB
+from sklearn.preprocessing import PolynomialFeatures
+
 
 random_state = 1
 
@@ -48,15 +57,45 @@ def plot_test_size_influence_over_score(clfs, min_proportion=.1, max_proportion=
     plt.ylabel('Score')
     plt.show()
 
+
+def random_forest_hyper_parameters_random_search(X_train, y_train):
+    # Create the parameter grid based on the results of random search 
+    param_grid = {
+        'bootstrap': [True],
+        'max_depth': np.linspace(10, 200, 10),
+        'max_features': [2, 3, 4, 5, 6, 7],
+        'min_samples_leaf': [2, 4, 5, 6, 7],
+        'min_samples_split': [2, 3, 4, 5, 6, 7, 8],
+        'n_estimators': [int(i) for i in np.linspace(100, 1000, 10)]
+    }
+    # Create a based model
+    rf = RandomForestClassifier()
+    # Instantiate the grid search model
+    grid_search = GridSearchCV(estimator = rf, param_grid = param_grid, 
+                            cv = 3, n_jobs = -1, verbose = 2)
+    # Fit the grid search to the data
+    grid_search.fit(X_train, y_train)
+    with open('hyperparameters.txt', 'w') as file:
+        file.write(json.dumps(grid_search.best_params_))
+    print(grid_search.best_params_)
+
 if __name__ == '__main__':
 
     clfs = {
-        'RandomForestClassifier': RandomForestClassifier(n_estimators=100, random_state=random_state),
+        'RandomForestClassifier': RandomForestClassifier(bootstrap=True, min_samples_leaf=4, n_estimators=1000, max_depth=10.0, max_features=2, min_samples_split=5,random_state=random_state),
         'LogisticRegression': LogisticRegression(solver='lbfgs', random_state=random_state),
         'LinearSVC': LinearSVC(max_iter= 1000, random_state=random_state),
-        'GradientBoostingClassifier': GradientBoostingClassifier(random_state=random_state)
+        'GradientBoostingClassifier': GradientBoostingClassifier(random_state=random_state),
+        'LinearDiscriminantAnalysis': LinearDiscriminantAnalysis(),
+        'QuadraticDiscriminantAnalysis': QuadraticDiscriminantAnalysis(),
+        'GaussianNB': GaussianNB()
+        # 'PolynomialFeatures': PolynomialFeatures()
     }
 
     print(fit_and_score_clfs(clfs))
+    print(fit_and_score_clfs(clfs))
+
 
     plot_test_size_influence_over_score(clfs, N=30)
+    # random_forest_hyper_parameters_random_search(X_train, y_train)
+
